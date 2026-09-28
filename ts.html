@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Invoice Ledger & Deal Manager</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --pending: #dc2626;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1300px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 15px;
+        }
+
+        /* Control Panel Tools (Filters & Actions) */
+        .control-panel {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .search-input, .select-filter {
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text);
+            background-color: #fff;
+        }
+
+        .search-input {
+            min-width: 260px;
+            flex: 1;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-print {
+            background-color: #0f172a;
+        }
+        .btn-print:hover {
+            background-color: #1e293b;
+        }
+
+        /* Upload Area Styling */
+        .upload-section {
+            background: var(--card);
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+
+        .upload-section:hover {
+            border-color: var(--primary);
+            background: #f1f5f9;
+        }
+
+        .upload-section p {
+            margin: 0;
+            font-size: 15px;
+            color: #64748b;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Table Container Styling */
+        .table-container {
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px -3px rgb(0 0 0 / 0.05);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            padding: 16px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr.hidden-row {
+            display: none !important;
+        }
+
+        /* Editable Input Fields styling inside table */
+        td input[type="text"], td input[type="number"] {
+            width: 90%;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text);
+            background: transparent;
+        }
+
+        td input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Total field styling (Disabled/Read-only look) */
+        td input.total-field {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            border-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        /* Status Badge Styling */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 110px;
+        }
+
+        .status-badge.pending {
+            background-color: #fee2e2;
+            color: var(--pending);
+        }
+
+        .status-badge.completed {
+            background-color: #dcfce7;
+            color: var(--success);
+        }
+
+        .action-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checkbox-wrapper {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            color: var(--pending);
+            background-color: #fee2e2;
+        }
+
+        /* ==========================================================================
+           PRINT STYLING (CSS Media Rules optimized for paper export)
+           ========================================================================== */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                padding: 0;
+                margin: 0;
+            }
+            .container {
+                max-width: 100%;
+            }
+            /* Hide non-essential layout controls */
+            .upload-section,
+            .control-panel,
+            .loading,
+            #fileInput,
+            .btn-delete,
+            .checkbox-wrapper {
+                display: none !important;
+            }
+            .table-container {
+                box-shadow: none;
+                border: none;
+            }
+            th {
+                background-color: #eaeaea !important;
+                color: black !important;
+                border-bottom: 2px solid black !important;
+            }
+            td {
+                border-bottom: 1px solid #ccc !important;
+            }
+            /* Strip input border styling to make printed form text look natural */
+            td input[type="text"], td input[type="number"] {
+                border: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+                font-size: 13px !important;
+            }
+            td input.total-field {
+                background: transparent !important;
+            }
+            .status-badge {
+                border: 1px solid #000;
+                padding: 4px 8px;
+            }
+            .status-badge.pending {
+                background: #fff !important;
+                color: black !important;
+            }
+            .status-badge.completed {
+                background: #eaeaea !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Invoice Ledger & Deal Manager</h1>
+    <div class="subtitle">Extract data profiles, manage internal project fulfillment statuses, and prepare reports.</div>
+
+    <!-- Drag & Drop Upload Zone -->
+    <div class="upload-section" onclick="document.getElementById('fileInput').click()">
+        <p>📄 <strong>Click to upload an invoice</strong> to extract record structures dynamically</p>
+        <input type="file" id="fileInput" accept="image/*,application/pdf">
+    </div>
+
+    <!-- Processing Feedback -->
+    <div class="loading" id="loadingText">Analyzing document metrics via core AI system...</div>
+
+    <!-- Control Filters & Tools Toolbar -->
+    <div class="control-panel">
+        <div class="filter-group">
+            <input type="text" id="searchFilter" class="search-input" placeholder="Search by Company or Item description..." oninput="applyFilters()">
+            <select id="statusFilter" class="select-filter" onchange="applyFilters()">
+                <option value="all">Show All Deals</option>
+                <option value="pending">Status: Pending Only</option>
+                <option value="completed">Status: Completed Only</option>
+            </select>
+        </div>
+        <div>
+            <button class="btn btn-print" onclick="window.print()">🖨️ Print Ledger Report</button>
+        </div>
+    </div>
+
+    <!-- Data Presentation Layout Table -->
+    <div class="table-container" id="tableContainer">
+        <table>
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>Item Name</th>
+                    <th>Square Feet (Qty)</th>
+                    <th>Total Amount (₹)</th>
+                    <th>Amount Paid (₹)</th>
+                    <th>Amount Due (₹)</th>
+                    <th>Deal Management & Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const loadingText = document.getElementById('loadingText');
+    const tableContainer = document.getElementById('tableContainer');
+    const tableBody = document.getElementById('tableBody');
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            processInvoice();
+        }
+    });
+
+    function processInvoice() {
+        loadingText.style.display = 'block';
+
+        setTimeout(() => {
+            loadingText.style.display = 'none';
+            tableContainer.style.display = 'block';
+
+            const mockExtractedData = {
+                companyName: "GNS ENTERPRISES",
+                itemName: "2.5mm thickness 40mm Gap, Sports Net",
+                sqft: 21250,
+                totalAmount: "2,33,750.00",
+                amountPaid: "1,70,300.00",
+                amountDue: "63,450.00"
+            };
+
+            addNewRow(mockExtractedData);
+        }, 1500);
+    }
+
+    function addNewRow(data) {
+        const row = document.createElement('tr');
+
+        row.setAttribute('data-status', 'pending');
+
+        row.innerHTML = `
+            <td>
+                <input type="text"
+                       class="company-input"
+                       value="${escapeHtml(data.companyName)}">
+            </td>
+
+            <td>
+                <input type="text"
+                       class="item-input"
+                       value="${escapeHtml(data.itemName)}">
+            </td>
+
+            <td>
+                <input type="number"
+                       value="${data.sqft}">
+            </td>
+
+            <td>
+                <input type="text"
+                       class="total-field"
+                       value="${data.totalAmount}"
+                       readonly>
+            </td>
+
+            <td>
+                <input type="text"
+                       class="paid-input"
+                       value="${data.amountPaid}"
+                       oninput="calculateTotal(this)">
+            </td>
+
+            <td>
+                <input type="text"
+                       class="due-input"
+                       value="${data.amountDue}"
+                       oninput="calculateTotal(this)">
+            </td>
+
+            <td>
+                <div class="action-cell">
+                    <input type="checkbox"
+                           class="checkbox-wrapper"
+                           onchange="toggleStatus(this)">
+
+                    <span class="status-badge pending">
+                        Deal Pending
+                    </span>
+                </div>
+            </td>
+
+            <td>
+                <button class="btn-delete"
+                        title="Delete"
+                        onclick="deleteRow(this)">
+                    🗑️
+                </button>
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+
+        applyFilters();
+    }
+
+    function calculateTotal(inputElement) {
+        const row = inputElement.closest('tr');
+
+        const paidInput = row.querySelector('.paid-input')
+            .value.replace(/,/g, '');
+
+        const dueInput = row.querySelector('.due-input')
+            .value.replace(/,/g, '');
+
+        const totalField = row.querySelector('.total-field');
+
+        const paid = parseFloat(paidInput) || 0;
+        const due = parseFloat(dueInput) || 0;
+
+        const total = paid + due;
+
+        totalField.value = total.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function toggleStatus(checkbox) {
+        const row = checkbox.closest('tr');
+        const statusBadge = checkbox.nextElementSibling;
+
+        if (checkbox.checked) {
+            statusBadge.textContent = "Deal Completed";
+            statusBadge.className = "status-badge completed";
+            row.setAttribute('data-status', 'completed');
+        } else {
+            statusBadge.textContent = "Deal Pending";
+            statusBadge.className = "status-badge pending";
+            row.setAttribute('data-status', 'pending');
+        }
+
+        applyFilters();
+    }
+
+    function deleteRow(button) {
+        if (confirm("Are you sure you want to delete this invoice?")) {
+            const row = button.closest('tr');
+            row.remove();
+
+            if (tableBody.querySelectorAll('tr').length === 0) {
+                tableContainer.style.display = 'none';
+            }
+        }
+    }
+
+    function applyFilters() {
+        const searchQuery =
+            document.getElementById('searchFilter')
+                .value
+                .toLowerCase()
+                .trim();
+
+        const statusValue =
+            document.getElementById('statusFilter').value;
+
+        const rows = tableBody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+
+            const companyInput =
+                row.querySelector('.company-input');
+
+            const itemInput =
+                row.querySelector('.item-input');
+
+            const companyText =
+                companyInput
+                    ? companyInput.value.toLowerCase()
+                    : "";
+
+            const itemText =
+                itemInput
+                    ? itemInput.value.toLowerCase()
+                    : "";
+
+            const rowStatus =
+                row.getAttribute('data-status');
+
+            const matchesSearch =
+                companyText.includes(searchQuery) ||
+                itemText.includes(searchQuery);
+
+            const matchesStatus =
+                statusValue === 'all' ||
+                rowStatus === statusValue;
+
+            if (matchesSearch && matchesStatus) {
+                row.classList.remove('hidden-row');
+            } else {
+                row.classList.add('hidden-row');
+            }
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+</script>
+
+</body>
+</html>
